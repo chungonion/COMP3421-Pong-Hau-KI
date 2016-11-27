@@ -1,0 +1,382 @@
+<!-- COMP3421 Assignment 2 Q1 Pong Hau K'i by Jason Ng 16089176D -->
+<html>
+
+<head>
+    <title>
+        COMP3421 Assignment 2 Question1
+    </title>
+    <style>
+        html {
+            font-family: Gill Sans MT;
+        }
+
+        .Move {
+            /*transform: translate(0px, 0px);*/
+            transition-duration: 1s;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #map-canvas {
+            width: 600;
+            height: 400;
+            margin: 0px;
+            padding: 0px;
+            position: absolute;
+            left: 0;
+            top: 60;
+            margin-left: auto;
+            margin-right: auto;
+            z-index: 1;
+            
+
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyCsifp-tZ-B8BWYu1Akmlgn-8yfPcuf4nU">
+    </script>
+    <script>
+        var map;
+
+        function initialize() {
+            var mapOptions = {
+                zoom: 11,
+                center: new google.maps.LatLng(22.31, 114.18)
+            };
+            map = new google.maps.Map(document.getElementById('map-canvas'),
+                mapOptions);
+        }
+
+        google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
+</head>
+
+<body>
+    <script src="jquery.min.js"></script>
+
+    <script>
+        var player_side = 1; //1 =  Player1, 2 = Player2
+        // another mechanism for storing the pos of the chess is needed maybe?
+        //Chess Board layout
+        // 1-------2
+        // |  \3/
+        // 4-------5
+        var gameboard;
+        var red_chess_1 = {
+            html_tag: document.getElementById("red_chess_1"),
+            // chess_pos: 1,
+            // id: 1,
+            colour: "red"
+        };
+        var red_chess_2 = {
+            html_tag: document.getElementById("red_chess_2"),
+            // chess_pos: 4,
+            // id: 2,
+            colour: "red"
+        };
+        var blue_chess_1 = {
+            html_tag: document.getElementById("blue_chess_1"),
+            // chess_pos: 2,
+            // id: 3,
+            colour: "blue"
+        };
+        var blue_chess_2 = {
+            html_tag: document.getElementById("blue_chess_2"),
+            // chess_pos: 5,
+            // id: 4,
+            colour: "blue"
+        };
+        var null_chess_1 = {
+            html_tag: document.getElementById("blue_chess_2"),
+            // chess_pos: 0,
+            // id: 0,
+            colour: "white"
+        };
+
+        var coordinates = [0, [50, 50],
+            [450, 50],
+            [250, 175],
+            [50, 300],
+            [450, 300]
+        ];
+        var pos_occupy = [0, red_chess_1, blue_chess_1, null_chess_1, red_chess_2, blue_chess_2];
+        var ctx;
+        var gameId;
+        <!-- -->
+        function draw() {
+
+            gameboard = document.getElementById("gameboard");
+            red_chess_1.html_tag = document.getElementById("red_chess_1");
+            red_chess_2.html_tag = document.getElementById("red_chess_2");
+            blue_chess_1.html_tag = document.getElementById("blue_chess_1");
+            blue_chess_2.html_tag = document.getElementById("blue_chess_2");
+            pos_occupy = [0, red_chess_1, blue_chess_1, null_chess_1, red_chess_2, blue_chess_2];
+
+            if (gameboard.getContext) {
+                ctx = gameboard.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(100, 100);
+                ctx.lineTo(500, 100);
+                ctx.moveTo(100, 100);
+                ctx.lineTo(100, 350);
+                ctx.lineTo(500, 350);
+                ctx.lineTo(100, 100);
+                ctx.moveTo(500, 100);
+                ctx.lineTo(100, 350);
+                ctx.stroke();
+            }
+
+            if (red_chess_1.html_tag.getContext) {
+                red_chess_1.html_tag.addEventListener('click', clickHandler, false);
+                ctx = red_chess_1.html_tag.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(50, 50, 50, 0, 2 * Math.PI);
+                ctx.fillStyle = "red";
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            if (red_chess_2.html_tag.getContext) {
+                red_chess_2.html_tag.addEventListener('click', clickHandler, false);
+                ctx = red_chess_2.html_tag.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(50, 50, 50, 0, 2 * Math.PI);
+                ctx.fillStyle = "red";
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            if (blue_chess_1.html_tag.getContext) {
+                blue_chess_1.html_tag.addEventListener('click', clickHandler, false);
+                ctx = blue_chess_1.html_tag.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(50, 50, 50, 0, 2 * Math.PI);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            if (blue_chess_2.html_tag.getContext) {
+                blue_chess_2.html_tag.addEventListener('click', clickHandler, false);
+                ctx = blue_chess_2.html_tag.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(50, 50, 50, 0, 2 * Math.PI);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.stroke();
+            }
+            // Chess 1, 2 are red chess 1 and 2 respectively
+            // Chess 3, 4 are blue chess 1 and 2 respectively
+
+            $.ajax({
+                url: 'Q1Server.php',
+                data: {
+                    action: 'start',
+                    gamefile: gameId
+                },
+                type: 'post'
+                    // ,success: function() {
+                    //     alert("OK!");
+                    // }
+            })
+        }
+
+        function restart() {
+            $.ajax({
+                url: 'Q1Server.php',
+                data: {
+                    action: 'chess_creation',
+                    gamefile: gameId
+                },
+                type: 'post'
+            })
+            change_player_side(1);
+        }
+
+        function change_player_side(player) {
+            switch (player) {
+                case 1:
+                    document.getElementById('turn').innerHTML = "Player <span style=\"color: red;\">Red's</span> Turn";
+                    break;
+                case 2:
+                    document.getElementById('turn').innerHTML = "Player <span style=\"color: blue;\">Blue's</span>  Turn";
+                    break;
+                case 3:
+                    document.getElementById('turn').innerHTML = "Player <span style=\"color: red;\">Red</span> Wins and Player <span style=\"color: blue;\">Blue</span> Lost!";
+                    break;
+                case 4:
+                    document.getElementById('turn').innerHTML = "Player <span style=\"color: blue;\">Blue</span> Wins and Player <span style=\"color: red;\">Red</span> Lost!";
+                    break;
+            }
+        }
+
+        function clickHandler(e) {
+            if (e.srcElement == red_chess_1.html_tag) {
+                $.ajax({
+                    url: 'Q1Server.php',
+                    data: {
+                        action: 'chess_clicked',
+                        gamefile: gameId,
+                        id: 1
+                    },
+                    type: 'post'
+                })
+
+                // check the position of the chess
+                // see whether there are empty space adajecent to the chess
+                // Then, applies animated effect to the chess, and translate
+                // the chess to the designated position
+
+            } else if (e.srcElement == red_chess_2.html_tag) {
+                $.ajax({
+                    url: 'Q1Server.php',
+                    data: {
+                        action: 'chess_clicked',
+                        gamefile: gameId,
+                        id: 2
+                    },
+                    type: 'post'
+                })
+            } else if (e.srcElement == blue_chess_1.html_tag) {
+                $.ajax({
+                    url: 'Q1Server.php',
+                    data: {
+                        action: 'chess_clicked',
+                        gamefile: gameId,
+                        id: 3
+                    },
+                    type: 'post'
+                })
+            } else if (e.srcElement == blue_chess_2.html_tag) {
+                $.ajax({
+                    url: 'Q1Server.php',
+                    data: {
+                        action: 'chess_clicked',
+                        gamefile: gameId,
+                        id: 4
+                    },
+                    type: 'post'
+                })
+            }
+            update_position();
+            //get update position!!!!
+        }
+
+        function update_position() {
+            $.ajax({
+                url: 'Q1Server.php',
+                data: {
+                    action: 'get_chess_location',
+                    gamefile: gameId
+                },
+                type: 'post',
+                success: function(data) {
+                    if (data) {
+                        var json = JSON.parse(data);
+                        var player = json["player_side"];
+                        for (var i = 1; i <= 5; i++) {
+                            var temp = json["pos_occupy"][i];
+                            switch (temp) {
+                                case 1:
+                                    red_chess_1.html_tag.style.left = coordinates[i][0];
+                                    red_chess_1.html_tag.style.top = coordinates[i][1];
+                                    break;
+                                case 2:
+                                    red_chess_2.html_tag.style.left = coordinates[i][0];
+                                    red_chess_2.html_tag.style.top = coordinates[i][1];
+                                    break;
+                                case 3:
+                                    blue_chess_1.html_tag.style.left = coordinates[i][0];
+                                    blue_chess_1.html_tag.style.top = coordinates[i][1];
+                                    break;
+                                case 4:
+                                    blue_chess_2.html_tag.style.left = coordinates[i][0];
+                                    blue_chess_2.html_tag.style.top = coordinates[i][1];
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        change_player_side(player);
+                        //alert(data);
+                    }
+                }
+            })
+        }
+
+        function enter_set_gameid(e) {
+            if (e.keyCode == 13) {
+                set_gameid();
+            }
+
+        }
+
+        function set_gameid() {
+            if (document.getElementById("game_id_input").value.length > 0) {
+                document.getElementById("game").className = "";
+                document.getElementById("begin").className = "hidden";
+                document.getElementById("no_id_input").className = "hidden";
+                gameId = document.getElementById("game_id_input").value;
+            } else {
+                document.getElementById("no_id_input").className = "";
+            }
+        }
+
+        function reset_game() {
+            gameId = "";
+            document.getElementById("game_id_input").value = "";
+            document.getElementById("game").className = "hidden";
+            document.getElementById("begin").className = "";
+        }
+
+        function start() {
+            draw();
+            update_position();
+            document.getElementById("game").className = "hidden";
+            setInterval(function() {
+                update_position();
+            }, 1000);
+        }
+    </script>
+
+    <h1 style="text-align: center;">COMP3421 Q1: Pong Hau K'i</h1>
+    <div id="begin" style="position: absolute; left: 0; right: 0; margin-left: auto; margin-right: auto; width: 600px;">
+        New to here? Got an on-going game? Please enter your previous or create a new game id!<br/> <i>Create new</i> or <i>enter Exist</i> Game ID:
+        <input id="game_id_input" type="text" name="game_id" onkeypress="enter_set_gameid(event);">
+        <input type="submit" value="Go!" onclick="set_gameid();">
+        <div id="no_id_input" class="hidden" style="color:red;"><i>The field cannot be empty!</i></div>
+        <div id="map-canvas"></div>
+        <div id="descriptionstyle" style="position: absolute; left: 0; top: 470; margin-left: auto; margin-right: auto; z-index: 1; width: 600px;">
+            <b>Pong Hau K'i</b> is a Chinese traditional board game for two players. The board consists of 5 vertices and 7 edges. <br/> <br/>
+            <b>Basics? </b>Each player has two pieces. Players take turns to move. At each turn, the player moves one of his two pieces into the adjacent vacant vertex. <br/><br/>
+            <b>How to win?</b> If a player can't move, he loses. Only one type of position can make a player lose. If both players play perfectly, the game continues endlessly with no winner.<br/><br/>
+            <b>Controls?</b> Player 1 will be using <span style="color: red;">Red</span> Chess, and Player 2 will be using <span style="color: blue;">Blue</span> Chess. Player 1 will start first. Players take turns to control the chess by clicking the
+            chess, and the chess will be moved to the nearest available empty slot in the chessboard.
+            <br/><br/><i>Source: https://en.wikipedia.org/wiki/Pong_Hau_K%27i</i><br/><br/><br/></div>
+    </div>
+    <div id="game" style="position: absolute; left: 0; right: 0; margin-left: auto; margin-right: auto; width: 600px;">
+        <div id="turn" style="text-align: center;">Now Loading...</div>
+        <canvas id="gameboard" width="600" height="400" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+        <canvas id="red_chess_1" class="Move" width="100" height="100" style="position: absolute; z-index: 1;">></canvas>
+        <canvas id="red_chess_2" class="Move" width="100" height="100" style="position: absolute; z-index: 1;">></canvas>
+        <canvas id="blue_chess_1" class="Move" width="100" height="100" style="position: absolute; z-index: 1;"></canvas>
+        <canvas id="blue_chess_2" class="Move" width="100" height="100" style="position: absolute; z-index: 1;"></canvas>
+        <button id="restart_button" style="position: absolute; left: 0; top: 430; z-index: 1;" onclick="restart()">Restart</button>
+        <button id="reset_button" style="position: absolute; left: 80; top: 430; z-index: 1;" onclick="reset_game()">Reset</button>
+        <div id="descriptionstyle" style="position: absolute; left: 0; top: 470; margin-left: auto; margin-right: auto; z-index: 1; width: 600px;">
+            <b>Pong Hau K'i</b> is a Chinese traditional board game for two players. The board consists of 5 vertices and 7 edges. <br/> <br/>
+            <b>Basics? </b>Each player has two pieces. Players take turns to move. At each turn, the player moves one of his two pieces into the adjacent vacant vertex. <br/><br/>
+            <b>How to win?</b> If a player can't move, he loses. Only one type of position can make a player lose. If both players play perfectly, the game continues endlessly with no winner.<br/><br/>
+            <b>Controls?</b> Player 1 will be using <span style="color: red;">Red</span> Chess, and Player 2 will be using <span style="color: blue;">Blue</span> Chess. Player 1 will start first. Players take turns to control the chess by clicking the
+            chess, and the chess will be moved to the nearest available empty slot in the chessboard.
+            <br/><br/><i>Source: https://en.wikipedia.org/wiki/Pong_Hau_K%27i</i><br/><br/><br/></div>
+    </div>
+    <script>
+        start();
+    </script>
+
+    <!-- default: begin from Player1 -->
+</body>
+
+</html>
